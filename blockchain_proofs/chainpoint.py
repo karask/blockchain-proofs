@@ -114,7 +114,7 @@ def main():
     r = cp.get_receipt(0, 'aaaaaddddaaa4a4a')
     print(r)
     print ( cp.validate_receipt(r) )
-    ADD TESTS TO PROJECT !!!!!!!!!!!!!
+    #ADD TESTS TO PROJECT !!!!!!!!!!!!!
 
 if __name__ == "__main__":
     main()
