@@ -1,2 +1,6 @@
 # blockchain-proofs
-A chainpoint (v2) implementation for generating and validating blockchain receipts (for proof of existence)
+Implementation for generating and validating blockchain proofs/receipts (for proof of existence). Currently it supports only [chainpoint v2](http://www.chainpoint.org/) but in the future it might incorporate other approaches like [OpenTimestamps](https://github.com/opentimestamps).
+
+
+
+
