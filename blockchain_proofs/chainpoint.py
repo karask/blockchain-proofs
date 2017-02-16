@@ -150,6 +150,7 @@ class ChainPointV2(object):
 
 
 def main():
+    print("Create tree for values 'a', 'b' and 'c' and display some details about the merkle tree")
     hashes = ['a', 'b', 'c']
     cp = ChainPointV2()
     cp.add_leaf(hashes, True)
@@ -159,13 +160,6 @@ def main():
     for x in range(0, len(hashes)):
         print("{}: {}".format(x, cp.get_proof(x)))
         print("\n")
-    for x in range(0, len(hashes)):
-            print(cp.validate_proof(cp.get_proof(x), cp.get_leaf(x), cp.get_merkle_root()))
-    r = cp.get_receipt(0, 'aaaaaddddaaa4a4a')
-    print(r)
-    print ( cp.validate_receipt(r) )
-    print ( cp.fetch_op_return_file_hash('509f6b149d71661aa803ebf13c7f6f55a4fece961982fca2d72d5a084968b8b1', '554e6963444320'))
-    #ADD TESTS TO PROJECT !!!!!!!!!!!!!
 
 if __name__ == "__main__":
     main()
