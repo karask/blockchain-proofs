@@ -17,9 +17,9 @@ Example usage
 ``$ python``
 
 >>> from blockchain_proofs import ChainPointV2
->>> hashes = ['a', 'b', 'c']
+>>> leafs = ['a', 'b', 'c']
 >>> cp = ChainPointV2()
->>> cp.add_leaf(hashes, True)
+>>> cp.add_leaf(leafs, True)
 >>> cp.make_tree()
 >>> cp.get_leaf_count()
 3
