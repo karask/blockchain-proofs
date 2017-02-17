@@ -6,7 +6,7 @@ from blockchain_proofs import __version__
 install_reqs = parse_requirements('requirements.txt', session=False)
 requirements = [str(ir.req) for ir in install_reqs]
 
-with open('README.md') as readme:
+with open('README.rst') as readme:
     long_description = readme.read()
 
 setup(name='blockchain-proofs',
