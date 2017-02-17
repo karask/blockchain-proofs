@@ -19,5 +19,10 @@ setup(name='blockchain-proofs',
       packages=['blockchain_proofs'],
       keywords='blockchain proof receipt chainpoint validation',
       install_requires=requirements,
+      classifiers=[
+          'Development Status :: 4 - Beta',
+          'Intended Audience :: Developers',
+          'Programming Language :: Python :: 3'
+      ]
      )
 
