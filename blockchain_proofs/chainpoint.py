@@ -120,21 +120,47 @@ class ChainPointV2(object):
                 break
 
         # validate anchor
-        hash_hex = self.fetch_op_return_file_hash(txid, metadata_prefix, testnet)
+        hash_hex = self.fetch_blockcypher_op_return_file_hash(txid, metadata_prefix, testnet)
         if(not merkle_root.lower() == hash_hex.lower()):
             return False
 
         return True
 
 
-    def fetch_op_return_file_hash(self, txid, metadata_prefix='', testnet=False):
+    def fetch_blockcypher_op_return_file_hash(self, txid, metadata_prefix='', testnet=False):
+        if testnet:
+            blockcypher_url = "https://api.blockcypher.com/v1/btc/test3/txs/" + txid
+        else:
+            blockcypher_url = "https://api.blockcypher.com/v1/btc/main/txs/" + txid
+
+        response = requests.get(blockcypher_url).json()
+        outputs = response['outputs']
+        hash_hex = ""
+        for o in outputs:
+            script = o['script']
+            if script.startswith('6a'):
+                # 2 for 1 byte op + 2 for 1 byte data length
+                ignore_hex_chars = 4
+                if metadata_prefix:
+                    ignore_hex_chars += len(metadata_prefix)
+
+                hash_hex = script[ignore_hex_chars:]
+                break
+        return hash_hex
+
+
+
+    def fetch_blockrio_op_return_file_hash(self, txid, metadata_prefix='', testnet=False):
         if testnet:
             blockr_url = "http://tbtc.blockr.io/api/v1/tx/info/" + txid
         else:
             blockr_url = "http://btc.blockr.io/api/v1/tx/info/" + txid
 
+        #print(blockr_url)
         response = requests.get(blockr_url).json()
+        #print(response)
         vouts = response['data']['vouts']
+        #print(vouts)
         hash_hex = ""
         for o in vouts:
             script = o['extras']['script']
