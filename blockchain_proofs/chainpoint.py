@@ -1,6 +1,7 @@
 import glob
 import requests
 import hashlib
+import binascii
 from merkletools import MerkleTools
 
 CHAINPOINT_CONTEXT = 'https://w3id.org/chainpoint/v2'
@@ -89,10 +90,11 @@ class ChainPointV2(object):
         receipt is the chainpoint_proof metadata from the pdf file.
         certificate_hash is the hash of the certificate after we removed the
             chainpoint_proof metadata
-        metadata_prefix is the prefix chosen when issuing in the blockchain
+        issuer_identifier is a fixed 8 bytes issuer code that displays on the
+            blockchain
         testnet specifies if testnet or mainnet was used
     '''
-    def validate_receipt(self, receipt, certificate_hash, metadata_prefix='', testnet=False):
+    def validate_receipt(self, receipt, certificate_hash, issuer_identifier='', testnet=False):
         # check context and hash type
         if(receipt['@context'].lower() != CHAINPOINT_CONTEXT):
             return False
@@ -110,24 +112,44 @@ class ChainPointV2(object):
         if(not self.validate_proof(proof, target_hash, merkle_root)):
            return False
 
-        # get anchor
-        # TODO currently gets only the first valid (BTC) anchor
-        anchors = receipt['anchors']
-        txid = ''
-        for a in anchors:
-            if a['type'] in CHAINPOINT_ANCHOR_TYPES.values():
-                txid = a['sourceId']
-                break
+        txid = self.get_txid_from_receipt(receipt)
 
         # validate anchor
-        hash_hex = self.fetch_blockcypher_op_return_file_hash(txid, metadata_prefix, testnet)
+        op_return_hex = self.get_op_return_hex_from_blockchain(txid, testnet)
+
+        # ignore issuer_identifier for now (it is string in CRED but used to be
+        # hex so we need a smart way to get it) -- TODO: obsolete it !!!
+        #issuer_id_hex = self.text_to_hex(issuer_identifier)
+
+        # if op_return starts with CRED it is using the meta-protocol
+        if op_return_hex.startswith(self.text_to_hex('CRED')):
+            # Structure in bytes/hex: 4 + 2 + 2 + 8 bytes = 8 + 4 + 4 + 16 in string hex
+
+            # TODO in the future could check version_hex and act depending on version
+            version_hex = op_return_hex[8:12]
+            command_hex = op_return_hex[12:16]
+            issuer_hex = op_return_hex[16:32] # could check if it is equal to issuer_id_hex!
+            hash_hex = self.hex_to_text(op_return_hex[32:])
+            #print(version_hex)
+            #print(command_hex)
+            #print(issuer_hex)
+            #print(hash_hex)
+            #print(merkle_root.lower())
+        # otherwise op_return should be fixed to 7 bytes or 14 hex chars (old prefix method)
+        else:
+            ignore_hex_chars = 14
+            hash_hex = op_return_hex[ignore_hex_chars:]
+
         if(not merkle_root.lower() == hash_hex.lower()):
             return False
 
         return True
 
 
-    def fetch_blockcypher_op_return_file_hash(self, txid, metadata_prefix='', testnet=False):
+
+
+    def get_op_return_hex_from_blockchain(self, txid, testnet):
+        # uses blockcypher API for now -- TODO: expand to consult multiple services
         if testnet:
             blockcypher_url = "https://api.blockcypher.com/v1/btc/test3/txs/" + txid
         else:
@@ -139,40 +161,45 @@ class ChainPointV2(object):
         for o in outputs:
             script = o['script']
             if script.startswith('6a'):
-                # 2 for 1 byte op + 2 for 1 byte data length
-                ignore_hex_chars = 4
-                if metadata_prefix:
-                    ignore_hex_chars += len(metadata_prefix)
+                # when > 75 op_pushdata1 (4c) is used before length
+                if script.startswith('6a4c'):
+                    # 2 for 1 byte op_return + 2 for 1 byte op_pushdata1 + 2 for 1 byte data length
+                    ignore_hex_chars = 6
+                else:
+                    # 2 for 1 byte op_return + 2 for 1 byte data length
+                    ignore_hex_chars = 4
 
                 hash_hex = script[ignore_hex_chars:]
                 break
         return hash_hex
 
 
-
-    def fetch_blockrio_op_return_file_hash(self, txid, metadata_prefix='', testnet=False):
-        if testnet:
-            blockr_url = "http://tbtc.blockr.io/api/v1/tx/info/" + txid
-        else:
-            blockr_url = "http://btc.blockr.io/api/v1/tx/info/" + txid
-
-        #print(blockr_url)
-        response = requests.get(blockr_url).json()
-        #print(response)
-        vouts = response['data']['vouts']
-        #print(vouts)
-        hash_hex = ""
-        for o in vouts:
-            script = o['extras']['script']
-            if script.startswith('6a'):
-                asm = o['extras']['asm']
-                if metadata_prefix:
-                    split_asm = " " + metadata_prefix
-                else:
-                    split_asm = " "
-                hash_hex = asm.split(split_asm, 1)[1]
+    def get_txid_from_receipt(self, receipt):
+        # get anchor
+        # TODO currently gets only the first valid (BTC) anchor
+        anchors = receipt['anchors']
+        txid = ''
+        for a in anchors:
+            if a['type'] in CHAINPOINT_ANCHOR_TYPES.values():
+                txid = a['sourceId']
                 break
-        return hash_hex
+        return txid
+
+    '''
+    Convert ASCII text to hex equivalent
+    TODO: Move to another file with utility methods
+    '''
+    def text_to_hex(self, string):
+        bstring = string.encode('utf-8')
+        return binascii.hexlify(bstring).decode('utf-8')
+
+    '''
+    Convert hex to ASCII text equivalent
+    '''
+    def hex_to_text(self, hex):
+        bstring = binascii.unhexlify(hex)
+        return bstring.decode('utf-8')
+
 
 
 def main():
