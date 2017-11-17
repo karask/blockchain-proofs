@@ -129,7 +129,7 @@ class ChainPointV2(object):
             version_hex = op_return_hex[8:12]
             command_hex = op_return_hex[12:16]
             issuer_hex = op_return_hex[16:32] # could check if it is equal to issuer_id_hex!
-            hash_hex = self.hex_to_text(op_return_hex[32:])
+            hash_hex = op_return_hex[32:96]   # get merkle root
             #print(version_hex)
             #print(command_hex)
             #print(issuer_hex)
